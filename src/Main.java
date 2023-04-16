@@ -1,16 +1,18 @@
 import java.util.*;
+import java.util.concurrent.*;
 
 public class Main {
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException, ExecutionException {
         String[] texts = new String[25];
         for (int i = 0; i < texts.length; i++) {
             texts[i] = generateText("aab", 30_000);
         }
-        List<Thread> threads = new ArrayList<>();
+        List<Future<?>> threads = new ArrayList<>();
+        ExecutorService executorService = new ForkJoinPool();
         long startTs = System.currentTimeMillis(); // start time
         for (String text : texts) {
-            Thread myThread = new Thread(()->{
+            Thread myThread = new Thread(() -> {
                 int maxSize = 0;
                 for (int i = 0; i < text.length(); i++) {
                     for (int j = 0; j < text.length(); j++) {
@@ -31,12 +33,13 @@ public class Main {
                 }
                 System.out.println(text.substring(0, 100) + " -> " + maxSize);
             });
-            threads.add(myThread);
+
+            threads.add(executorService.submit(myThread));
             myThread.start();
 
         }
-        for (Thread thread : threads) {
-            thread.join(); // зависаем, ждём когда поток объект которого лежит в thread завершится
+        for (Future<?> thread : threads) {
+            thread.get();
         }
         long endTs = System.currentTimeMillis(); // end time
 
